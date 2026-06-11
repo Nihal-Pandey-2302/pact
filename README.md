@@ -82,7 +82,8 @@ Full, copy-pasteable steps — including the live-testnet path — are in
 [RUNBOOK.md](RUNBOOK.md).
 
 ```bash
-npm install
+git clone --recursive https://github.com/Nihal-Pandey-2302/pact && cd pact
+npm install                           # (if cloned without --recursive: git submodule update --init --recursive)
 cd contracts && forge test            # 19 passing: lifecycle, gasless, dispute, fuzz
 
 # Local in 60s: run anvil on Pharos' chain id, deploy, point .env at it.

@@ -7,8 +7,11 @@ demo (no faucet, runs in ~1 minute) and the live Pharos Atlantic deployment.
 ## 0. Install
 
 ```bash
-cd ~/Projects/pact
+git clone --recursive https://github.com/Nihal-Pandey-2302/pact
+cd pact
 npm install
+# already cloned without --recursive? fetch the OpenZeppelin submodule:
+git submodule update --init --recursive
 ```
 
 ## 1. Contracts — test
