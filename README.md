@@ -1,38 +1,99 @@
-# Pact — conditional settlement for x402 agent payments
+<div align="center">
 
-**x402 lets agents pay over HTTP. Pact lets them pay *on delivery*.**
+# Pact
 
-x402's production scheme, `exact`, is a push payment — irreversible the moment it
-executes. An agent pays first and hopes the counterparty is honest and delivers.
-That's fine for a $0.001 API call; it's reckless when one agent pays another to do
-real work. Pact adds the missing primitive: **`escrow`, a conditional settlement
-scheme for x402 on Pharos**, plus the reputation and arbitration that make
-agent-to-agent commerce trustworthy.
+### Conditional settlement for the agent economy — the missing **`escrow`** scheme for x402.
 
-> Built for the Skill-to-Agent Dual Cascade Hackathon (Pharos × Anvita Flow).
-> Phase 1 ships three composable Skills; they cascade into the Phase 2 **Steward** agent.
+**x402 lets agents pay over HTTP. Pact lets them pay _on delivery_** — funds locked on a single signature, released only when the work is delivered and accepted, refunded on a no-show, split by an arbiter on dispute, with reputation earned on-chain.
+
+![Live on Pharos Atlantic](https://img.shields.io/badge/Live-Pharos_Atlantic-5b8cff?style=for-the-badge)
+![chain 688689](https://img.shields.io/badge/chain-688689-1f6feb?style=for-the-badge)
+![x402 escrow scheme](https://img.shields.io/badge/x402-escrow_scheme-2ea043?style=for-the-badge)
+![Foundry 19 passing](https://img.shields.io/badge/Foundry-19_tests_passing-3fb950?style=for-the-badge)
+![MIT](https://img.shields.io/badge/license-MIT-lightgrey?style=for-the-badge)
+
+**[Live contracts ↗](https://atlantic.pharosscan.xyz/address/0x22D56C7E5A3Cf9B745ca1D369D74BeEEB4201Ec7)** · **[Deployment record](DEPLOYMENTS.md)** · **[Runbook](RUNBOOK.md)** · **[The escrow scheme spec](skills/pact-escrow/references/escrow-scheme.md)**
+
+🎥 _Demo video: add link_ &nbsp;|&nbsp; Built for the **Pharos × Anvita Flow Skill-to-Agent Dual Cascade Hackathon**
+
+</div>
 
 ---
 
-## The idea in one paragraph
+## 🟢 Deployed & proven on Pharos Atlantic
 
-A paying agent's USDC is locked in an on-chain escrow bound to a specific request.
-The provider delivers a result; funds **release** on the payer's acceptance (or
-auto-release after a review window), **refund** if the provider no-shows, or **split
-by an arbiter** on dispute. Every outcome writes **reputation that is earned, never
-self-reported** — because only the escrow contract can write it. It keeps x402's
-exact ergonomics (a `402` challenge, an `X-PAYMENT` header, a facilitator with
-`/verify` `/settle` `/supported`); the payer still signs once (EIP-3009) and sends
-no transaction. The only thing that changes is *what the signature funds*.
+Not a localhost prototype — **the whole escrow lifecycle ran on-chain** on Pharos Atlantic (chain `688689`).
 
-## Why it fits x402 (not a fork)
+| Contract | Address | |
+|---|---|---|
+| **PactEscrow** | `0x22D56C7E5A3Cf9B745ca1D369D74BeEEB4201Ec7` | [explorer ↗](https://atlantic.pharosscan.xyz/address/0x22D56C7E5A3Cf9B745ca1D369D74BeEEB4201Ec7) |
+| **PactReputation** | `0x0E8F77A0aFbB10f09D1e1C70FF669A135FAFfA95` | [explorer ↗](https://atlantic.pharosscan.xyz/address/0x0E8F77A0aFbB10f09D1e1C70FF669A135FAFfA95) |
+| **PactArbiter** | `0x728cC2c144f16B2ea93A754607a590289456101c` | [explorer ↗](https://atlantic.pharosscan.xyz/address/0x728cC2c144f16B2ea93A754607a590289456101c) |
+| **MockUSDC** (EIP-3009) | `0xBe39C0e0Ec029aaab71224ad73eFfCEEDA677427` | [explorer ↗](https://atlantic.pharosscan.xyz/address/0xBe39C0e0Ec029aaab71224ad73eFfCEEDA677427) |
 
-x402 is explicitly scheme-extensible: a *scheme* is just "a logical way of moving
-money," advertised in `PaymentRequirements.scheme` and matched by a facilitator that
-supports the `(scheme, network)` pair. `exact` already exists. Pact registers
-**`escrow`** alongside it — same protocol, new settlement behaviour. That's the
-foundational-layer contribution: we extend the rail the whole Pharos agent economy
-is being built on.
+`ENV=production npm run demo` drove all three terminal states live; reputation moved **`0 → 10000 → 3333 → 2000`** as deals settled:
+
+| Deal | Outcome | On-chain effect |
+|---|---|---|
+| honest provider | **release** | provider paid 0.10 USDC · score → **10000** |
+| no-show | **refund** | payer made whole after deadline · score → **3333** |
+| bad delivery | **dispute → arbiter** | funds split to payer · provider `faulted` · score → **2000** |
+
+> With x402's `exact` scheme, the last two are impossible — the money was already gone.
+
+---
+
+## The insight
+
+x402's production scheme, **`exact`**, is a *push payment* — irreversible the moment it executes. The agent pays first and hopes. That's fine for a $0.001 API call; it's reckless when one agent pays another to do real work.
+
+Pact adds the primitive x402 is missing: **`escrow`, a conditional settlement scheme** that keeps x402's exact ergonomics — a `402` challenge, an `X-PAYMENT` header, a facilitator with `/verify` `/settle` `/supported`, and a single gasless EIP-3009 signature from the payer — and changes only **what that signature funds**: an on-chain escrow bound to the request, instead of the provider's wallet.
+
+x402 is explicitly scheme-extensible (`PaymentRequirements.scheme` + a facilitator that supports the `(scheme, network)` pair). `exact` already exists; **Pact registers `escrow` alongside it.** That's the foundational-layer contribution — we extend the exact rail the Pharos agent economy is being built on, rather than fork it.
+
+---
+
+## What's inside
+
+A complete vertical slice — contracts, protocol, skills, an autonomous agent, and a UI — that all compose:
+
+| Layer | What it is |
+|---|---|
+| **Contracts** | `PactEscrow` (conditional vault) · `PactReputation` (earned, unfakeable) · `PactArbiter` (dispute rulings) · EIP-3009 `MockUSDC`. 19 Foundry tests incl. fuzzing. |
+| **The `escrow` x402 scheme** | A facilitator (`/verify` `/settle` `/supported`), a provider server, a client, and a typed SDK — the conditional scheme running over real x402 ergonomics. |
+| **3 composable Skills** | [`pact-escrow`](skills/pact-escrow/SKILL.md) · [`pact-reputation`](skills/pact-reputation/SKILL.md) · [`pact-arbiter`](skills/pact-arbiter/SKILL.md) — Anthropic-format `SKILL.md` (the official Pharos Skill format), with bundled `assets/` + the wire spec. |
+| **The Steward agent** (Phase 2) | [`agent/steward`](agent/steward/AGENT.md) — an autonomous buyer built *only* from the three Skills: reputation → escrow → verify → release/dispute. |
+| **Web UI** | A Next.js app: a **Buyer** flow (with real **MetaMask** signing) and a live **Steward dashboard** (reputation cards + SSE task feed + flywheel). |
+
+---
+
+## Quickstart
+
+Every command below is verified — locally against an anvil pinned to Pharos' chain id, and live on Atlantic. Full copy-paste steps (incl. live deploy) in **[RUNBOOK.md](RUNBOOK.md)**.
+
+```bash
+git clone --recursive https://github.com/Nihal-Pandey-2302/pact && cd pact
+npm install                            # cloned without --recursive? git submodule update --init --recursive
+cd contracts && forge test             # 19 passing: lifecycle, gasless EIP-3009, dispute, fuzz
+
+# run the whole story locally in ~60s (anvil pinned to Pharos' chain id)
+anvil --chain-id 688689 &
+forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast
+cd .. && npm run demo                   # honest→released · no-show→refunded · bad→disputed→arbiter
+```
+
+Then drive it like an agent would:
+
+```bash
+npm run facilitator                                      # /verify /settle /supported (exact + escrow)
+npm run provider                                         # an escrow-protected price API
+npm run client -- "http://localhost:4021/price?symbol=BTC" --release   # pay-on-delivery
+npm run reputation -- 0x<provider>                       # read earned, escrow-gated reputation
+```
+
+> The payer **never pays gas to fund a deal** — the facilitator relays the EIP-3009 signature. It only signs `release`/`dispute`.
+
+---
 
 ## Architecture
 
@@ -55,120 +116,79 @@ is being built on.
                                        └───────────────┘   └──────────────────┘
 ```
 
-## The Skills (Phase 1)
+**The lifecycle, every path terminal (funds can never be trapped):**
 
-| Skill | What it gives an agent |
-|---|---|
-| [`pact-escrow`](skills/pact-escrow/SKILL.md) | Call or offer an escrow-protected endpoint — pay-on-delivery over x402. |
-| [`pact-reputation`](skills/pact-reputation/SKILL.md) | Check a counterparty's earned, sybil-resistant score *before* paying. |
-| [`pact-arbiter`](skills/pact-arbiter/SKILL.md) | Open a dispute, or (as a juror) rule on one. |
+| Action | Who | When | Result |
+|---|---|---|---|
+| `release` | payer (or anyone post-window) | result accepted | provider paid (minus fee) |
+| `refundExpired` | anyone | provider no-show | payer refunded in full |
+| `dispute` → `resolve` | payer → arbiter | result is wrong | funds split by ruling |
+| `resolveTimeout` | anyone | arbiter absent | neutral 50/50 |
 
-Each is an Anthropic-format `SKILL.md` (the same format as the official Pharos
-`x402-pharos` skill) and is consumable by Claude Code / Open Code / Anvita Flow.
+---
 
-## Contracts (`contracts/src`)
+## Phase 2 — the **Steward** agent (the cascade)
 
-- [`PactEscrow.sol`](contracts/src/PactEscrow.sol) — the escrow vault. Direct funding (`open`) and **gasless** funding (`openWithAuthorization`, EIP-3009 with the nonce bound to the exact deal). Lifecycle: deliver → release / refundExpired / dispute → resolve / resolveTimeout. Funds can never be trapped.
-- [`PactReputation.sol`](contracts/src/PactReputation.sol) — writable only by the escrow; scores are a byproduct of settled deals.
-- [`PactArbiter.sol`](contracts/src/PactArbiter.sol) — whitelisted-juror rulings, swappable for a staked panel later.
-- [`MockUSDC.sol`](contracts/src/mocks/MockUSDC.sol) — 6-decimal test USDC with EIP-2612 + **EIP-3009**, so the gasless path runs exactly as it would against real USDC.
-
-Network: **Pharos Atlantic** (chain `688689`, RPC `https://atlantic.dplabs-internal.com`, explorer `https://atlantic.pharosscan.xyz`).
-
-## Quickstart
-
-Verified end-to-end on a local anvil running as Pharos Atlantic (chain `688689`).
-Full, copy-pasteable steps — including the live-testnet path — are in
-[RUNBOOK.md](RUNBOOK.md).
+The Skills compose into **[Steward](agent/steward/AGENT.md)**, an autonomous buyer built *only* from Phase 1. Per task it **checks reputation** → **escrows** payment → **verifies** the result (deterministic policy gate, plus **Claude `claude-opus-4-8`** as an optional judge when `ANTHROPIC_API_KEY` is set) → **releases or disputes**, and every outcome feeds the next decision.
 
 ```bash
-git clone --recursive https://github.com/Nihal-Pandey-2302/pact && cd pact
-npm install                           # (if cloned without --recursive: git submodule update --init --recursive)
-cd contracts && forge test            # 19 passing: lifecycle, gasless, dispute, fuzz
-
-# Local in 60s: run anvil on Pharos' chain id, deploy, point .env at it.
-anvil --chain-id 688689 &             # (or use the live RPC + a faucet-funded key)
-forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast
-cd ..                                 # copy printed addresses into .env (see RUNBOOK)
-
-npm run facilitator                   # terminal 1 — /supported /verify /settle (exact + escrow)
-npm run provider                      # terminal 2 — an escrow-protected price API
-npm run client -- "http://localhost:4021/price?symbol=BTC" --release   # pay-on-delivery
-npm run reputation -- 0x<provider>    # read earned, escrow-gated reputation
-
-npm run demo                          # the whole story: honest→released, no-show→refunded, bad→disputed
+npm run steward     # boots an honest + a shoddy provider; runs the Steward over a task stream
 ```
 
-> Gas: payer, provider, facilitator and deployer each need a little PHRS on testnet.
-> The payer never pays gas to *fund* a deal — that's the facilitator's job — but does
-> sign release/dispute in this reference flow.
+**Verified run:** the Steward bootstraps each provider once — the honest one earns a perfect score, the shoddy one (it returns `price: 0`) is caught, **disputed, and marked at fault** — then every remaining job routes to the honest provider. **Final tally: honest 5, shoddy 0.** That's the agent-economy trust flywheel: deliver well and win the next job; deliver junk once and get routed out.
 
-## Phase 1 → Phase 2 cascade: the Steward agent
-
-The Skills compose into **[Steward](agent/steward/AGENT.md)**, the Agent Arena entry —
-an autonomous buyer built *only* from the Phase 1 Skills. Per task it **checks
-reputation** (`pact-reputation`), **escrows** payment (`pact-escrow`), gets the
-result, **verifies** it (a deterministic policy gate, plus Claude `claude-opus-4-8`
-when `ANTHROPIC_API_KEY` is set), then **releases or disputes** (`pact-arbiter`) — and
-every outcome updates reputation for the next decision.
-
-```bash
-npm run steward     # boots an honest + a shoddy provider, runs the Steward over a task stream
-```
-
-Verified run (deterministic verifier, no key needed): the Steward bootstraps each
-provider once, the honest one earns a perfect score and the shoddy one (it delivers
-`price: 0`) gets **disputed and marked at fault** — then the Steward routes every
-remaining job to the honest provider. **Final tally: honest 5 jobs, shoddy 0.** That's
-the agent-economy trust flywheel: deliver well and win the next job; deliver junk once
-and get routed out.
+---
 
 ## Web UI
 
-A live app over the same backend: a **Buyer** page (request → `402` → escrow → result
-→ release/dispute, with the on-chain verdict) and a **Steward** dashboard (reputation
-cards + a live SSE task feed + the flywheel). A thin gateway reuses the exact code the
-CLI demos use, so the UI is presentation over a backend that's already verified.
+A live app over the same verified backend — a thin gateway exposes it; the UI is pure presentation.
 
 ```bash
-npm run gateway              # boots facilitator + both providers, serves the API on :4040
-cd web && npm install && npm run dev   # Next.js on http://localhost:3000
+npm run gateway                          # facilitator + both providers + API on :4040
+cd web && npm install && npm run dev     # http://localhost:3000
 ```
 
-The Buyer page supports a real **MetaMask** wallet (sign the EIP-3009 funding auth +
-send `release`/`dispute` yourself; the gateway relays and the arbiter rules) and falls
-back to a zero-friction burner the gateway signs with. For a pristine recording,
-`bash scripts/reset-demo.sh` (fresh chain + redeploy → reputation from zero). For the
-live testnet, fill `.env.production` and run with `ENV=production`.
+- **Buyer** — pick a provider, watch `402 → escrow → result → verdict`, then **Release** or **Dispute**. Signs with a real **MetaMask** wallet (gasless EIP-3009 funding; you send `release`/`dispute` yourself) or a zero-friction burner.
+- **Steward dashboard** — provider reputation cards, a live **SSE** task feed, and the flywheel bar.
 
-## How it maps to the judging criteria
+For a pristine recording: `bash scripts/reset-demo.sh` (fresh chain + redeploy → reputation from zero). For live: fill `.env.production` and run anything with `ENV=production`.
 
-- **Originality** — the trust layer x402 lacks; a new x402 *scheme*, not another DeFi/price bot.
-- **Reusability / composability** — three independent Skills every paying agent needs; reputation is invoked around every deal.
-- **Technical quality** — EIP-3009 gasless funding with deal-bound nonces, reentrancy-safe settlement, no-trapped-funds invariants, full Foundry suite incl. fuzzing.
-- **Pharos alignment** — agent payments + agent-social/trust + A2A + compliance, on Pharos Atlantic via x402.
-- **Cascade** — Skills (Phase 1) that visibly become an Agent (Phase 2).
+---
+
+## Built for the Skill-to-Agent Dual Cascade Hackathon
+
+| Judging axis | How Pact answers it |
+|---|---|
+| **Originality** | A new x402 *scheme* — the conditional-settlement trust layer x402 lacks. Not another price bot. |
+| **Reusability / composability** | Three independent `SKILL.md` Skills every paying agent needs; reputation is invoked around every deal. |
+| **Technical quality** | Gasless EIP-3009 with deal-bound nonces, reentrancy-safe settlement, no-trapped-funds invariants, 19-test Foundry suite with fuzzing — and a security pass with fixes applied. |
+| **Pharos alignment** | Agent payments + agent-social trust + A2A commerce, **deployed and exercised on Pharos Atlantic** via x402. |
+| **The cascade** | Phase 1 Skills that *visibly become* a Phase 2 Agent — the Steward is built from nothing but those Skills. |
+
+---
+
+## Security
+
+- **Deal-bound nonce.** The EIP-3009 `nonce` is bound to `(chainId, escrow, payer, provider, token, amount, requestHash, deliverBy, reviewWindow)` — a relayed authorization can only ever open the exact deal it was signed for.
+- **Issued-challenge binding.** A provider only settles deals for challenges it actually issued, on the terms it offered (one-shot, TTL'd).
+- **Best-effort reputation.** Reputation writes are `try/catch`'d — a misbehaving reputation contract can never freeze a settlement or trap funds.
+- **Always a terminal exit.** `release` / `refundExpired` / `resolve` / `resolveTimeout` — no path locks funds.
+- **Reviewed.** A multi-angle code review was run and its findings fixed (loopback-only gateway, origin allowlist, canonical result hashing, fail-loud config, and more).
+
+---
 
 ## Repo layout
 
 ```text
 contracts/        Foundry: PactEscrow / PactReputation / PactArbiter / MockUSDC + tests + deploy
-src/lib/          x402 escrow scheme (chains, abi, signing, escrowScheme, contracts helpers)
-src/facilitator/  the facilitator service (/supported /verify /settle)
-skills/           pact-escrow · pact-reputation · pact-arbiter  (SKILL.md + scripts)
-                  pact-escrow/{assets,references}  — networks.json, ABIs, the escrow-scheme wire spec
-src/demo/         end-to-end narrative
+src/lib/          the x402 escrow scheme — chains, ABIs, EIP-3009 signing, scheme, contract helpers
+src/facilitator/  facilitator service (/supported /verify /settle)
+skills/           pact-escrow · pact-reputation · pact-arbiter   (SKILL.md + assets + wire spec)
 src/gateway/      HTTP/SSE gateway over the backend, for the web UI
-agent/steward/    Phase 2 — the Steward agent: reputation-routed, escrow-paying, self-verifying
-web/              Next.js app — Buyer flow + live Steward dashboard
+agent/steward/    Phase 2 — the Steward agent (reputation-routed, escrow-paying, self-verifying)
+web/              Next.js app — Buyer flow (MetaMask) + live Steward dashboard
+scripts/          reset-demo.sh — pristine chain + redeploy for a clean recording
 ```
-
-## Security notes
-
-- EIP-3009 `nonce` is bound to `(chainId, escrow, payer, provider, token, amount, requestHash, deliverBy, reviewWindow)` — a relayed authorization can only open the exact deal it was signed for.
-- Reputation writes are best-effort (`try/catch`): a misbehaving reputation contract can never freeze a settlement.
-- Every deal has a terminal exit (`release` / `refundExpired` / `resolve` / `resolveTimeout`) — no path traps funds.
-- `MockUSDC` is for testnet only; on mainnet, point `USDC_ADDRESS` at canonical USDC (same EIP-3009 surface).
 
 ## License
 
