@@ -142,6 +142,7 @@ npm run steward     # boots an honest, a shoddy, and a no-show provider; runs th
 ## Web UI
 
 A live app over the same verified backend — a thin gateway exposes it; the UI is pure presentation.
+Four pages: an **Overview**, a visual **How-it-works** walkthrough of the escrow scheme, the **Buyer** flow, and the **Steward** dashboard.
 
 ```bash
 npm run gateway                          # facilitator + 3 providers (honest/shoddy/no-show) + API on :4040

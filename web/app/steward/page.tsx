@@ -49,7 +49,8 @@ export default function StewardPage() {
     <>
       <div className="row between" style={{marginTop: 28, flexWrap: "wrap", gap: 12}}>
         <div>
-          <h1 className="hero" style={{fontSize: 34, margin: 0}}>
+          <div className="eyebrow">autonomous a2a commerce</div>
+          <h1 className="hero" style={{fontSize: 34, margin: "10px 0 0"}}>
             Steward
           </h1>
           <p className="sub" style={{fontSize: 16, marginTop: 8}}>

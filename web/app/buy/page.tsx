@@ -120,7 +120,8 @@ export default function Buy() {
     <>
       <div className="row between" style={{marginTop: 28, flexWrap: "wrap", gap: 12}}>
         <div>
-          <h1 className="hero" style={{fontSize: 34, margin: 0}}>
+          <div className="eyebrow">pay-on-delivery</div>
+          <h1 className="hero" style={{fontSize: 34, margin: "10px 0 0"}}>
             Buyer
           </h1>
           <p className="sub" style={{fontSize: 16, marginTop: 8}}>
