@@ -34,8 +34,8 @@ export default function Nav() {
       <Link href="/" className="brand">
         <span className="mark">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M12 2.5 L19.5 5.3 V11 C19.5 15.8 16 19.3 12 20.8 C8 19.3 4.5 15.8 4.5 11 V5.3 Z" fill="#fff" fillOpacity="0.96" />
-            <path d="M8.6 12 l2.3 2.3 l4.5-4.6" stroke="#6d28d9" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M22 12 17 3.34 7 3.34 2 12 7 20.66 17 20.66Z" fill="none" stroke="#fff" strokeOpacity="0.45" strokeWidth="1.4" strokeLinejoin="round" />
+            <path d="M8 12.4 10.6 15 16 9" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
         Pact

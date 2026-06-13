@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="web/public/mark.svg" width="78" alt="Pact" />
+
 # Pact
 
 ### Conditional settlement for the agent economy — the missing **`escrow`** scheme for x402.
