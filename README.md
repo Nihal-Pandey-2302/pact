@@ -132,10 +132,10 @@ npm run reputation -- 0x<provider>                       # read earned, escrow-g
 The Skills compose into **[Steward](agent/steward/AGENT.md)**, an autonomous buyer built *only* from Phase 1. Per task it **checks reputation** → **escrows** payment → **verifies** the result (deterministic policy gate, plus **Claude `claude-opus-4-8`** as an optional judge when `ANTHROPIC_API_KEY` is set) → **releases or disputes**, and every outcome feeds the next decision.
 
 ```bash
-npm run steward     # boots an honest + a shoddy provider; runs the Steward over a task stream
+npm run steward     # boots an honest, a shoddy, and a no-show provider; runs the Steward over a task stream
 ```
 
-**Verified run:** the Steward bootstraps each provider once — the honest one earns a perfect score, the shoddy one (it returns `price: 0`) is caught, **disputed, and marked at fault** — then every remaining job routes to the honest provider. **Final tally: honest 5, shoddy 0.** That's the agent-economy trust flywheel: deliver well and win the next job; deliver junk once and get routed out.
+**Verified run:** the Steward bootstraps each provider once — the honest one earns a perfect score; the shoddy one (it returns `price: 0`) is caught and **disputed**; the no-show takes the escrow and never delivers, so the Steward **waits out the deadline and reclaims** the funds (a `refundExpired`), penalising it — then every remaining job routes to the honest provider. **Final tally: honest 5, shoddy 0, no-show 0.** That's the agent-economy trust flywheel: deliver well and win the next job; misbehave once and get routed out.
 
 ---
 
@@ -144,7 +144,7 @@ npm run steward     # boots an honest + a shoddy provider; runs the Steward over
 A live app over the same verified backend — a thin gateway exposes it; the UI is pure presentation.
 
 ```bash
-npm run gateway                          # facilitator + both providers + API on :4040
+npm run gateway                          # facilitator + 3 providers (honest/shoddy/no-show) + API on :4040
 cd web && npm install && npm run dev     # http://localhost:3000
 ```
 

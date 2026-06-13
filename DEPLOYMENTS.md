@@ -14,6 +14,20 @@ RPC `https://atlantic.dplabs-internal.com`, explorer `https://atlantic.pharossca
 
 Deployer / owner / arbiter juror: `0x81bE69d0868a863c9993E2F7657B6Fda794efE4d`
 
+## Live transactions (one escrow deal, end to end)
+
+A complete pay-on-delivery deal on Atlantic — funded gaslessly by the payer's EIP-3009
+signature (the facilitator relays it), delivered, then released:
+
+| Step | Tx |
+|---|---|
+| **open** (`openWithAuthorization`, gasless) | [`0x641842…1010b`](https://atlantic.pharosscan.xyz/tx/0x641842bab400eb69933654aaba75cde12d3588807d0fa8851338c374bf61010b) |
+| **deliver** (provider commits the result hash) | [`0xe12ded…1953`](https://atlantic.pharosscan.xyz/tx/0xe12ded35bf7cd2033d05e253ba9327d76b6f943f9dd8b9dbd1126ac073e11953) |
+| **release** (payer releases → provider paid) | [`0x458967…062b27`](https://atlantic.pharosscan.xyz/tx/0x45896795ff5410d0ceaa597973a0acf708b03647f3ef1e5dffb1acacbf062b27) |
+
+The contracts' full history (deploys, deals, refunds, dispute resolutions) is on the
+explorer — open the [PactEscrow](https://atlantic.pharosscan.xyz/address/0x22D56C7E5A3Cf9B745ca1D369D74BeEEB4201Ec7) address above.
+
 ## Verified live (the escrow scheme, end to end on Atlantic)
 
 `ENV=production npm run demo` drove all three terminal states on-chain:
