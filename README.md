@@ -74,6 +74,14 @@ Every command below is verified — locally against an anvil pinned to Pharos' c
 ```bash
 git clone --recursive https://github.com/Nihal-Pandey-2302/pact && cd pact
 npm install                            # cloned without --recursive? git submodule update --init --recursive
+
+# ⚡ the whole app in one command — fresh chain + deploy + gateway + web UI on :3000
+npm run app                            # (npm run app:live targets the live Atlantic deployment)
+```
+
+Or step through it manually:
+
+```bash
 cd contracts && forge test             # 19 passing: lifecycle, gasless EIP-3009, dispute, fuzz
 
 # run the whole story locally in ~60s (anvil pinned to Pharos' chain id)
