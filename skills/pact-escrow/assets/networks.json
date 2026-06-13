@@ -12,12 +12,12 @@
       "x402Network": "eip155:688689",
       "faucet": "https://testnet.pharosnetwork.xyz",
       "contracts": {
-        "escrow": "",
-        "reputation": "",
-        "arbiter": "",
-        "usdc": ""
+        "escrow": "0x22D56C7E5A3Cf9B745ca1D369D74BeEEB4201Ec7",
+        "reputation": "0x0E8F77A0aFbB10f09D1e1C70FF669A135FAFfA95",
+        "arbiter": "0x728cC2c144f16B2ea93A754607a590289456101c",
+        "usdc": "0xBe39C0e0Ec029aaab71224ad73eFfCEEDA677427"
       },
-      "note": "Fill in `contracts` after running contracts/script/Deploy.s.sol against this RPC."
+      "note": "Live deployment on Pharos Atlantic (chain 688689). USDC is a 6-decimal EIP-3009 test token with an open mint()."
     },
     "local": {
       "chainId": 688689,
