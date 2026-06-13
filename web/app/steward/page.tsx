@@ -67,7 +67,7 @@ export default function StewardPage() {
         </button>
       </div>
 
-      <div className="grid cols-2" style={{marginTop: 22}}>
+      <div className="grid cols-3" style={{marginTop: 22}}>
         {(state?.providers ?? []).map((p) => (
           <ProviderCard key={p.address} p={p} won={won[p.name] ?? 0} />
         ))}
@@ -83,7 +83,7 @@ export default function StewardPage() {
                 <span className="mono">{won[p.name] ?? 0}</span>
               </div>
               <div className="bar">
-                <span style={{width: `${((won[p.name] ?? 0) / maxWon) * 100}%`, background: p.name === "Sketchy" ? "var(--bad)" : "var(--good)"}} />
+                <span style={{width: `${((won[p.name] ?? 0) / maxWon) * 100}%`, background: p.name === "Acme" ? "var(--good)" : p.name === "Lazy" ? "var(--warn)" : "var(--bad)"}} />
               </div>
             </div>
           ))}
@@ -106,12 +106,13 @@ export default function StewardPage() {
 }
 
 function ProviderCard({p, won}: {p: ProviderState; won: number}) {
-  const tone = p.faulted > 0 ? "bad" : p.completed > 0 ? "good" : "muted";
+  const kind =
+    p.name === "Sketchy" ? {label: "shoddy", tone: "bad"} : p.name === "Lazy" ? {label: "no-show", tone: "warn"} : {label: "honest", tone: "good"};
   return (
     <div className="card">
       <div className="row between">
         <h3 style={{margin: 0}}>{p.name}</h3>
-        <span className={`badge ${tone}`}>{p.name === "Sketchy" ? "shoddy" : "honest"}</span>
+        <span className={`badge ${kind.tone}`}>{kind.label}</span>
       </div>
       <div className="row between" style={{alignItems: "flex-end", marginTop: 8}}>
         <div className="score">

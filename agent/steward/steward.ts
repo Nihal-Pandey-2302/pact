@@ -36,6 +36,7 @@ export interface Outcome {
 }
 
 const log = (m: string) => console.log(m);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class Steward {
   constructor(private cfg: StewardConfig) {}
@@ -93,14 +94,22 @@ export class Steward {
     // records the no-show against the provider's reputation), otherwise report the
     // truth: funds are recoverable but not yet, do NOT claim a refund that didn't happen.
     if (STATE[deal.state] !== "Delivered") {
-      const now = Math.floor(Date.now() / 1000);
-      if (now > Number(deal.deliverBy)) {
+      // Provider settled but never delivered. refundExpired is permissionless but only
+      // valid past deliverBy — wait out a short deadline, then reclaim. The reclaim
+      // records the no-show against the provider (so it's penalised and routed out,
+      // not re-tried forever as "untried"). Don't block on far-future deadlines.
+      const waitMs = (Number(deal.deliverBy) - Math.floor(Date.now() / 1000) + 2) * 1000;
+      if (waitMs > 0 && waitMs <= 30_000) {
+        log(`  ${choice.name} didn't deliver — waiting ${Math.ceil(waitMs / 1000)}s for the deadline, then reclaiming…`);
+        await sleep(waitMs);
+      }
+      if (Math.floor(Date.now() / 1000) > Number(deal.deliverBy)) {
         await refundExpired(this.cfg.payerPk, this.cfg.escrow, BigInt(dealId));
         log(`  ${choice.name} no-show → refundExpired: payer refunded, provider penalised`);
-        return {task, provider: choice.name, reason, dealId, action: "refunded", detail: "no delivery; refunded after deadline"};
+        return {task, provider: choice.name, reason, dealId, action: "refunded", detail: "no delivery; refunded after the deadline"};
       }
       log(`  ${choice.name} took the escrow but did not deliver — refundable after deliverBy (${deal.deliverBy})`);
-      return {task, provider: choice.name, reason, dealId, action: "failed", detail: `no delivery; reclaim with refundExpired after ${deal.deliverBy}`};
+      return {task, provider: choice.name, reason, dealId, action: "failed", detail: `no delivery; reclaim after ${deal.deliverBy}`};
     }
 
     const verdict = await verifyDelivery(task, body.result, body.escrow?.resultHash);

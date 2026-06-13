@@ -45,7 +45,7 @@ routed out.
 ## Run it
 
 ```bash
-npm run steward        # boots a facilitator + an honest and a shoddy provider, then
+npm run steward        # boots a facilitator + honest / shoddy / no-show providers, then
                        # turns the Steward loose on a stream of tasks
 ```
 

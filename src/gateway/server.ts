@@ -47,9 +47,11 @@ const usdc = requireAddress("usdc");
 
 const ACME_PK = "0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e" as Hex; // acct 6
 const SKETCHY_PK = "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356" as Hex; // acct 7
+const LAZY_PK = "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97" as Hex; // acct 8
 const acme = {name: "Acme", url: "http://localhost:4031/price", address: privateKeyToAccount(ACME_PK).address};
 const sketchy = {name: "Sketchy", url: "http://localhost:4032/price", address: privateKeyToAccount(SKETCHY_PK).address};
-const providers = [acme, sketchy];
+const lazy = {name: "Lazy", url: "http://localhost:4033/price", address: privateKeyToAccount(LAZY_PK).address};
+const providers = [acme, sketchy, lazy];
 const byName = (n: string) => providers.find((p) => p.name.toLowerCase() === n.toLowerCase());
 const nameOf = (addr: string) => providers.find((p) => p.address.toLowerCase() === addr.toLowerCase())?.name ?? "—";
 
@@ -69,6 +71,8 @@ function bootServices() {
   boot("src/facilitator/server.ts", {FACILITATOR_PORT: String(FAC_PORT)});
   boot("skills/pact-escrow/server.ts", {PROVIDER_PORT: "4031", PROVIDER_PRIVATE_KEY: ACME_PK, PROVIDER_BEHAVIOR: "honest", PROVIDER_NAME: "Acme", FACILITATOR_URL: `http://localhost:${FAC_PORT}`});
   boot("skills/pact-escrow/server.ts", {PROVIDER_PORT: "4032", PROVIDER_PRIVATE_KEY: SKETCHY_PK, PROVIDER_BEHAVIOR: "shoddy", PROVIDER_NAME: "Sketchy", FACILITATOR_URL: `http://localhost:${FAC_PORT}`});
+  // short deliver deadline so the Steward can wait it out and reclaim within a round
+  boot("skills/pact-escrow/server.ts", {PROVIDER_PORT: "4033", PROVIDER_PRIVATE_KEY: LAZY_PK, PROVIDER_BEHAVIOR: "lazy", PROVIDER_NAME: "Lazy", DELIVER_SECONDS: "8", FACILITATOR_URL: `http://localhost:${FAC_PORT}`});
 }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function waitFor(url: string, tries = 50) {
@@ -319,12 +323,13 @@ async function main() {
     waitFor(`http://localhost:${FAC_PORT}/supported`),
     waitFor("http://localhost:4031/"),
     waitFor("http://localhost:4032/"),
+    waitFor("http://localhost:4033/"),
   ]);
   // loopback-only: never expose the funded-key endpoints to the network.
   const server = app.listen(PORT, "127.0.0.1", () => {
     console.log(`Pact gateway on http://localhost:${PORT}  [${IS_PRODUCTION ? "PRODUCTION" : "local"} · ${RPC}]`);
     console.log(`  buyer ${buyer}`);
-    console.log(`  providers: Acme(honest) ${acme.address}  Sketchy(shoddy) ${sketchy.address}`);
+    console.log(`  providers: Acme(honest) · Sketchy(shoddy) · Lazy(no-show)`);
   });
   server.on("error", (e) => {
     if ((e as NodeJS.ErrnoException).code === "EADDRINUSE") {

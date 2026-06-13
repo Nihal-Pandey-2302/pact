@@ -34,10 +34,12 @@ const usdc = requireAddress("usdc");
 // reputation even on a chain that has seen earlier demos. (Public test keys.)
 const ACME_PK = "0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e" as Hex; // acct 6
 const SKETCHY_PK = "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356" as Hex; // acct 7
+const LAZY_PK = "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97" as Hex; // acct 8
 
 const acme: Provider = {name: "Acme", url: "http://localhost:4031/price", address: privateKeyToAccount(ACME_PK).address};
 const sketchy: Provider = {name: "Sketchy", url: "http://localhost:4032/price", address: privateKeyToAccount(SKETCHY_PK).address};
-const providers = [acme, sketchy];
+const lazy: Provider = {name: "Lazy", url: "http://localhost:4033/price", address: privateKeyToAccount(LAZY_PK).address};
+const providers = [acme, sketchy, lazy];
 
 const children: ChildProcess[] = [];
 function boot(name: string, file: string, extraEnv: Record<string, string>): ChildProcess {
@@ -91,7 +93,7 @@ async function main() {
     await mint(payerPk, usdc, steward.address(), 100_000_000n);
   }
 
-  console.log("booting facilitator + 2 providers…");
+  console.log("booting facilitator + 3 providers…");
   boot("facilitator", "src/facilitator/server.ts", {FACILITATOR_PORT: String(FAC_PORT)});
   boot("acme", "skills/pact-escrow/server.ts", {
     PROVIDER_PORT: "4031", PROVIDER_PRIVATE_KEY: ACME_PK, PROVIDER_BEHAVIOR: "honest",
@@ -101,17 +103,22 @@ async function main() {
     PROVIDER_PORT: "4032", PROVIDER_PRIVATE_KEY: SKETCHY_PK, PROVIDER_BEHAVIOR: "shoddy",
     PROVIDER_NAME: "Sketchy", FACILITATOR_URL: `http://localhost:${FAC_PORT}`,
   });
+  boot("lazy", "skills/pact-escrow/server.ts", {
+    PROVIDER_PORT: "4033", PROVIDER_PRIVATE_KEY: LAZY_PK, PROVIDER_BEHAVIOR: "lazy",
+    PROVIDER_NAME: "Lazy", DELIVER_SECONDS: "8", FACILITATOR_URL: `http://localhost:${FAC_PORT}`,
+  });
 
   await waitFor(`http://localhost:${FAC_PORT}/supported`, "facilitator");
   await waitFor("http://localhost:4031/", "Acme");
   await waitFor("http://localhost:4032/", "Sketchy");
+  await waitFor("http://localhost:4033/", "Lazy");
   console.log(`up. verifier: ${process.env.ANTHROPIC_API_KEY ? `Claude (${process.env.STEWARD_MODEL ?? "claude-opus-4-8"})` : "deterministic policy"}\n`);
   void FACILITATOR_URL;
 
-  const symbols = ["BTC", "ETH", "PHRS", "BTC", "ETH", "BTC"];
+  const symbols = ["BTC", "ETH", "PHRS", "BTC", "ETH", "BTC", "ETH"];
   const tasks: Task[] = symbols.map((s) => ({symbol: s, description: `get the current USD price of ${s}`}));
 
-  const won: Record<string, number> = {Acme: 0, Sketchy: 0};
+  const won: Record<string, number> = {};
   console.log("start reputation:\n" + (await repTable()) + "\n");
 
   for (const task of tasks) {
@@ -121,9 +128,9 @@ async function main() {
   }
 
   console.log("\n── flywheel ──");
-  console.log(`  jobs won:  Acme=${won.Acme}   Sketchy=${won.Sketchy}`);
-  console.log("  After one bad delivery, the Steward stopped routing work to Sketchy —");
-  console.log("  reputation it earned (or lost) on-chain now decides who gets paid next.");
+  console.log(`  jobs won:  ${providers.map((p) => `${p.name}=${won[p.name] ?? 0}`).join("   ")}`);
+  console.log("  The shoddy provider was disputed and the no-show was refunded — both routed out.");
+  console.log("  Reputation earned (or lost) on-chain now decides who gets paid next.");
 
   shutdown();
   await sleep(200);
