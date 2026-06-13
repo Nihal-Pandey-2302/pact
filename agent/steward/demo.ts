@@ -16,7 +16,7 @@ import "../../src/lib/loadEnv";
 import {spawn, type ChildProcess} from "node:child_process";
 import {privateKeyToAccount} from "viem/accounts";
 import {type Hex} from "viem";
-import {pk, requireAddress, FACILITATOR_URL} from "../../src/lib/env";
+import {pk, requireAddress} from "../../src/lib/env";
 import {balanceOf, mint, getScore, getRecord} from "../../src/lib/contracts";
 import {Steward} from "./steward";
 import {type Provider} from "./registry";
@@ -113,7 +113,6 @@ async function main() {
   await waitFor("http://localhost:4032/", "Sketchy");
   await waitFor("http://localhost:4033/", "Lazy");
   console.log(`up. verifier: ${process.env.ANTHROPIC_API_KEY ? `Claude (${process.env.STEWARD_MODEL ?? "claude-opus-4-8"})` : "deterministic policy"}\n`);
-  void FACILITATOR_URL;
 
   const symbols = ["BTC", "ETH", "PHRS", "BTC", "ETH", "BTC", "ETH"];
   const tasks: Task[] = symbols.map((s) => ({symbol: s, description: `get the current USD price of ${s}`}));
