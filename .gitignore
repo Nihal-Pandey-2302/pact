@@ -19,3 +19,8 @@ contracts/broadcast/
 # tooling
 .qodo/
 .claude/
+
+# internal submission prep — keep local, never publish
+SUBMISSION.md
+VIDEO.md
+BUIDL.md
